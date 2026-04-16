@@ -133,6 +133,7 @@ export default function PatientDashboard() {
                           </div>
                           <div>
                             <h3 className="font-bold text-text-main">{appt.doctorName}</h3>
+                            <p className="text-xs text-text-muted italic mb-1">"{appt.notes}"</p>
                             <div className="flex items-center gap-3 text-sm text-text-muted mt-1">
                               <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {appt.date}</span>
                               <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {appt.time}</span>

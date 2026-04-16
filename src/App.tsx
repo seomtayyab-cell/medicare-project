@@ -6,7 +6,7 @@
 import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LogIn } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
@@ -17,41 +17,6 @@ import PatientDashboard from './components/PatientDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import Footer from './components/Footer';
 import { Doctor, UserProfile } from './types';
-
-const MOCK_DOCTORS: Doctor[] = [
-  {
-    id: '1',
-    name: 'Dr. Sarah Johnson',
-    specialty: 'Cardiologist',
-    bio: 'Expert in interventional cardiology with over 15 years of experience.',
-    image: 'https://images.unsplash.com/photo-1559839734-2b71f1536780?auto=format&fit=crop&q=80&w=400',
-    department: 'Cardiology'
-  },
-  {
-    id: '2',
-    name: 'Dr. Michael Chen',
-    specialty: 'Neurologist',
-    bio: 'Specializes in neurodegenerative diseases and brain health.',
-    image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400',
-    department: 'Neurology'
-  },
-  {
-    id: '3',
-    name: 'Dr. Emily Williams',
-    specialty: 'Pediatrician',
-    bio: 'Dedicated to providing compassionate care for children of all ages.',
-    image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=400',
-    department: 'Pediatrics'
-  },
-  {
-    id: '4',
-    name: 'Dr. James Wilson',
-    specialty: 'Orthopedic Surgeon',
-    bio: 'Specialist in joint replacement and sports medicine.',
-    image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
-    department: 'Orthopedics'
-  }
-];
 
 export default function App() {
   const [user, loading] = useAuthState(auth);
@@ -90,29 +55,6 @@ export default function App() {
 
     fetchProfile();
   }, [user]);
-
-  React.useEffect(() => {
-    const initDoctors = async () => {
-      if (userProfile?.role !== 'admin') return;
-      
-      const path = 'doctors';
-      try {
-        const doctorsSnap = await getDocs(collection(db, 'doctors'));
-        if (doctorsSnap.empty) {
-          const batch = writeBatch(db);
-          MOCK_DOCTORS.forEach((docData) => {
-            const docRef = doc(collection(db, 'doctors'), docData.id);
-            batch.set(docRef, docData);
-          });
-          await batch.commit();
-        }
-      } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, path);
-      }
-    };
-
-    initDoctors();
-  }, [userProfile]);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);

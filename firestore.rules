@@ -63,6 +63,13 @@ service cloud.firestore {
              (data.patientUid == request.auth.uid || isAdmin());
     }
 
+    function isValidDoctor(data) {
+      return data.keys().hasAll(['name', 'specialty', 'department']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 128 &&
+             data.specialty is string &&
+             data.department in ['Cardiology', 'Neurology', 'Pediatrics', 'Orthopedics', 'Dermatology', 'General'];
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -75,7 +82,7 @@ service cloud.firestore {
 
     match /doctors/{doctorId} {
       allow read: if true; // Publicly viewable
-      allow write: if isAdmin();
+      allow write: if isAdmin() && isValidDoctor(request.resource.data);
     }
 
     match /appointments/{appointmentId} {

@@ -20,6 +20,7 @@ export interface Doctor {
 export interface Appointment {
   id: string;
   patientUid: string;
+  patientName: string;
   doctorId: string;
   doctorName: string;
   date: string;

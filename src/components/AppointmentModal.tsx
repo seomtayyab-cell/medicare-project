@@ -29,6 +29,7 @@ export default function AppointmentModal({ doctor, onClose }: AppointmentModalPr
       await addDoc(collection(db, path), {
         id: crypto.randomUUID(),
         patientUid: auth.currentUser.uid,
+        patientName: auth.currentUser.displayName || 'Anonymous Patient',
         doctorId: doctor.id,
         doctorName: doctor.name,
         date: formData.date,
@@ -119,13 +120,14 @@ export default function AppointmentModal({ doctor, onClose }: AppointmentModalPr
 
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-2">
-                    <FileText className="w-4 h-4" /> Notes (Optional)
+                    <FileText className="w-4 h-4" /> Health Concern (e.g. Fever, Headache)
                   </label>
                   <textarea
+                    required
                     rows={3}
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="Briefly describe your concern..."
+                    placeholder="Describe your symptoms..."
                     className="input-field w-full resize-none"
                   />
                 </div>
