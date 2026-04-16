@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the hospital system, either a patient or an admin.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase Auth UID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's full name." },
+        "role": { "type": "string", "enum": ["patient", "admin"], "description": "The user's role in the system." },
+        "photoURL": { "type": "string", "format": "uri", "description": "URL to the user's profile picture." }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "description": "A medical professional working at the hospital.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the doctor." },
+        "name": { "type": "string", "description": "Full name of the doctor." },
+        "specialty": { "type": "string", "description": "Medical specialty (e.g., Cardiology, Pediatrics)." },
+        "bio": { "type": "string", "description": "Short biography of the doctor." },
+        "image": { "type": "string", "format": "uri", "description": "URL to the doctor's portrait." },
+        "department": { "type": "string", "description": "The department the doctor belongs to." }
+      },
+      "required": ["id", "name", "specialty", "department"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "A scheduled medical visit.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the appointment." },
+        "patientUid": { "type": "string", "description": "UID of the patient who booked the appointment." },
+        "doctorId": { "type": "string", "description": "ID of the doctor for the appointment." },
+        "doctorName": { "type": "string", "description": "Name of the doctor (denormalized for display)." },
+        "date": { "type": "string", "format": "date", "description": "Date of the appointment (YYYY-MM-DD)." },
+        "time": { "type": "string", "description": "Time of the appointment (e.g., 10:00 AM)." },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"], "description": "Current status of the appointment." },
+        "notes": { "type": "string", "description": "Optional notes from the patient." }
+      },
+      "required": ["id", "patientUid", "doctorId", "date", "time", "status"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "A medical report or document uploaded by or for a patient.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the report." },
+        "patientUid": { "type": "string", "description": "UID of the patient the report belongs to." },
+        "title": { "type": "string", "description": "Title of the report (e.g., Blood Test)." },
+        "fileUrl": { "type": "string", "format": "uri", "description": "URL to the uploaded file." },
+        "date": { "type": "string", "format": "date", "description": "Date the report was issued." },
+        "doctorName": { "type": "string", "description": "Name of the doctor who issued the report." }
+      },
+      "required": ["id", "patientUid", "title", "fileUrl", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles stored by UID."
+    },
+    "/doctors/{doctorId}": {
+      "schema": "Doctor",
+      "description": "List of doctors available in the hospital."
+    },
+    "/appointments/{appointmentId}": {
+      "schema": "Appointment",
+      "description": "All scheduled appointments."
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Medical reports for patients."
+    }
+  }
+}
