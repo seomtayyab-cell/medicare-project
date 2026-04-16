@@ -34,8 +34,14 @@ export default function Hero({ onBookNow }: { onBookNow: () => void }) {
                 Book Appointment
                 <ArrowRight className="w-5 h-5" />
               </button>
-              <button className="px-8 py-4 rounded-lg font-bold text-text-main hover:bg-white transition-all border border-border-main">
-                View Departments
+              <button 
+                onClick={() => {
+                  const signinBtn = document.querySelector('#nav-signin-btn') as HTMLButtonElement;
+                  signinBtn?.click();
+                }}
+                className="px-8 py-4 rounded-lg font-bold text-text-main hover:bg-white transition-all border border-border-main bg-white/50 backdrop-blur-sm shadow-sm"
+              >
+                Patient Portal
               </button>
             </div>
 

@@ -16,6 +16,7 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
   const [user] = useAuthState(auth);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = React.useState(false);
+  const [authMode, setAuthMode] = React.useState<'login' | 'signup'>('login');
 
   const logout = () => signOut(auth);
 
@@ -30,7 +31,8 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-card-bg/80 backdrop-blur-md border-b border-border-main">
+    <>
+      <nav className="fixed top-0 left-0 right-0 z-[100] bg-card-bg/80 backdrop-blur-md border-b border-border-main">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('home')}>
@@ -64,12 +66,28 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setIsAuthModalOpen(true)}
-                className="btn-primary py-2 text-sm"
-              >
-                Sign In
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  id="nav-signin-btn"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="text-sm font-bold text-text-muted hover:text-primary transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  id="nav-signup-btn"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="btn-primary py-2 text-sm px-5"
+                >
+                  Sign Up
+                </button>
+              </div>
             )}
           </div>
 
@@ -105,25 +123,42 @@ export default function Navbar({ onNavigate, currentPage }: NavbarProps) {
                 </button>
               ))}
               {!user && (
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true);
-                    setIsMenuOpen(false);
-                  }}
-                  className="w-full mt-4 bg-primary text-white px-3 py-2 rounded-md text-base font-bold"
-                >
-                  Sign In
-                </button>
+                <div className="flex flex-col gap-2 mt-4">
+                  <button
+                    id="mobile-signin-btn"
+                    onClick={() => {
+                      setAuthMode('login');
+                      setIsAuthModalOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full border border-border-main text-text-main px-3 py-2 rounded-md text-base font-bold"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    id="mobile-signup-btn"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setIsAuthModalOpen(true);
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full bg-primary text-white px-3 py-2 rounded-md text-base font-bold"
+                  >
+                    Sign Up
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <AuthModal 
-        isOpen={isAuthModalOpen} 
-        onClose={() => setIsAuthModalOpen(false)} 
-      />
     </nav>
-  );
+
+    <AuthModal 
+      isOpen={isAuthModalOpen} 
+      onClose={() => setIsAuthModalOpen(false)} 
+      initialMode={authMode}
+    />
+  </>
+);
 }

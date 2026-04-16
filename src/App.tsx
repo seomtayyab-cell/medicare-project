@@ -7,6 +7,7 @@ import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db, handleFirestoreError, OperationType } from './firebase';
 import { doc, getDoc, setDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { LogIn } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Departments from './components/Departments';
@@ -73,7 +74,7 @@ export default function App() {
               uid: user.uid,
               email: user.email || '',
               displayName: user.displayName || 'User',
-              role: user.email === 'seomtayyab@gmail.com' ? 'admin' : 'patient',
+              role: (user.email === 'seomtayyab@gmail.com' || user.email === 'adminmedicare@gmail.com') ? 'admin' : 'patient',
               photoURL: user.photoURL || undefined
             };
             await setDoc(docRef, newProfile);
@@ -138,7 +139,7 @@ export default function App() {
     <div className="min-h-screen bg-white font-sans text-slate-900">
       <Navbar onNavigate={handleNavigate} currentPage={currentPage} />
       
-      <main>
+      <main className="pt-16">
         {currentPage === 'home' && (
           <>
             <Hero onBookNow={() => handleNavigate('doctors')} />
@@ -155,9 +156,23 @@ export default function App() {
           userProfile ? (
             userProfile.role === 'admin' ? <AdminDashboard /> : <PatientDashboard />
           ) : (
-            <div className="pt-40 pb-24 text-center bg-bg-main min-h-screen">
-              <h2 className="text-2xl font-bold text-text-main mb-4">Please sign in to view your dashboard</h2>
-              <p className="text-text-muted">You need to be authenticated to access this page.</p>
+            <div className="flex flex-col items-center justify-start min-h-[80vh] text-center px-4 pt-20">
+              <div className="bg-card-bg p-8 rounded-2xl border border-border-main shadow-xl max-w-md w-full">
+                <LogIn className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-text-main mb-2">Access Restricted</h2>
+                <p className="text-text-muted mb-6">Please sign in to your account to view your personalized medical dashboard and reports.</p>
+                <button 
+                  onClick={() => {
+                    const nav = document.querySelector('nav');
+                    const signinBtn = nav?.querySelector('#nav-signin-btn') || nav?.querySelector('#mobile-signin-btn');
+                    const signupBtn = nav?.querySelector('#nav-signup-btn') || nav?.querySelector('#mobile-signup-btn');
+                    (signinBtn as HTMLButtonElement || signupBtn as HTMLButtonElement)?.click();
+                  }}
+                  className="btn-primary w-full py-3"
+                >
+                  Sign In Now
+                </button>
+              </div>
             </div>
           )
         )}
