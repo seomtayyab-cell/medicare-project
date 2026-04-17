@@ -1,14 +1,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Mail, Lock, User, LogIn, UserPlus, Chrome } from 'lucide-react';
-import { auth, googleProvider, db } from '../firebase';
+import { X, Mail, Lock, User, LogIn, UserPlus } from 'lucide-react';
+import { auth, db } from '../firebase';
 import { 
-  signInWithPopup, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   updateProfile 
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -33,32 +32,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       setFormData({ email: '', password: '', displayName: '' });
     }
   }, [isOpen, initialMode]);
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      
-      if (!userDoc.exists()) {
-        await setDoc(doc(db, 'users', result.user.uid), {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          role: (result.user.email === 'seomtayyab@gmail.com' || result.user.email === 'adminmedicare@gmail.com') ? 'admin' : 'patient',
-          photoURL: result.user.photoURL
-        });
-      }
-      onClose();
-    } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        setError(err.message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,24 +179,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
               </button>
             </form>
           </div>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border-main"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card-bg px-2 text-text-muted font-bold">Or continue with</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-border-main py-3 rounded-lg text-sm font-bold text-text-main hover:bg-slate-50 transition-all"
-          >
-            <Chrome className="w-5 h-5 text-primary" />
-            Google Account
-          </button>
 
           <div className="mt-8 text-center">
             <button

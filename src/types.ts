@@ -37,3 +37,15 @@ export interface Report {
   date: string;
   doctorName?: string;
 }
+
+export interface Prescription {
+  id: string;
+  patientUid: string;
+  doctorName: string;
+  date: string;
+  medicine: string;
+  instructions: string;
+  status: 'active' | 'completed' | 'checked';
+  createdAt: any;
+  appointmentId?: string;
+}

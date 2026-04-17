@@ -17,6 +17,9 @@ service cloud.firestore {
     // Collection: reports
     // Fields: id, patientUid, title, fileUrl, date, doctorName
     //
+    // Collection: prescriptions
+    // Fields: id, patientUid, doctorName, date, medicine, instructions, status
+    //
     // ===============================================================
 
     // ===============================================================
@@ -63,6 +66,16 @@ service cloud.firestore {
              (data.patientUid == request.auth.uid || isAdmin());
     }
 
+    function isValidPrescription(data) {
+      return data.keys().hasAll(['id', 'patientUid', 'doctorName', 'date', 'medicine', 'instructions', 'status']) &&
+             data.keys().hasOnly(['id', 'patientUid', 'doctorName', 'date', 'medicine', 'instructions', 'status', 'createdAt', 'appointmentId']) &&
+             data.id is string && data.id.size() < 128 &&
+             data.patientUid is string && data.patientUid.size() < 128 &&
+             data.medicine is string && data.medicine.size() > 0 &&
+             data.status in ['active', 'completed', 'checked'] &&
+             (!('appointmentId' in data) || (data.appointmentId is string && data.appointmentId.size() < 128));
+    }
+
     function isValidDoctor(data) {
       return data.keys().hasAll(['name', 'specialty', 'department']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 128 &&
@@ -96,6 +109,13 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidReport(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin()) && isValidReport(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /prescriptions/{pxId} {
+      allow read: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin());
+      allow create: if isAdmin() && isValidPrescription(request.resource.data);
+      allow update: if isAdmin() && isValidPrescription(request.resource.data);
       allow delete: if isAdmin();
     }
   }

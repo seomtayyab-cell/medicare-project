@@ -56,6 +56,21 @@
         "doctorName": { "type": "string", "description": "Name of the doctor who issued the report." }
       },
       "required": ["id", "patientUid", "title", "fileUrl", "date"]
+    },
+    "Prescription": {
+      "title": "Prescription",
+      "description": "A medical prescription issued by a doctor to a patient.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the prescription." },
+        "patientUid": { "type": "string", "description": "UID of the patient receiving the prescription." },
+        "doctorName": { "type": "string", "description": "Name of the prescribing doctor." },
+        "date": { "type": "string", "format": "date", "description": "Date the prescription was issued." },
+        "medicine": { "type": "string", "description": "The prescribed medicine(s)." },
+        "instructions": { "type": "string", "description": "Dosage and frequency instructions." },
+        "status": { "type": "string", "enum": ["active", "completed"], "description": "Current status of the prescription." }
+      },
+      "required": ["id", "patientUid", "doctorName", "date", "medicine", "instructions", "status"]
     }
   },
   "firestore": {
@@ -74,6 +89,10 @@
     "/reports/{reportId}": {
       "schema": "Report",
       "description": "Medical reports for patients."
+    },
+    "/prescriptions/{pxId}": {
+      "schema": "Prescription",
+      "description": "Medical prescriptions for patients."
     }
   }
 }
