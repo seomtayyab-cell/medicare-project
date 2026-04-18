@@ -5,12 +5,11 @@ import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { Appointment, Prescription } from '../types';
 import { cn } from '../lib/utils';
-import AIAssistant from './AIAssistant';
 
 export default function PatientDashboard() {
   const [appointments, setAppointments] = React.useState<Appointment[]>([]);
   const [prescriptions, setPrescriptions] = React.useState<Prescription[]>([]);
-  const [activeTab, setActiveTab] = React.useState<'appointments' | 'prescriptions' | 'ai'>('appointments');
+  const [activeTab, setActiveTab] = React.useState<'appointments' | 'prescriptions'>('appointments');
   const [selectedPx, setSelectedPx] = React.useState<Prescription | null>(null);
 
   React.useEffect(() => {
@@ -82,21 +81,6 @@ export default function PatientDashboard() {
             >
               <Pill className="w-5 h-5" /> Prescriptions
             </button>
-            <button
-              onClick={() => setActiveTab('ai')}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold transition-all border border-transparent",
-                activeTab === 'ai' 
-                  ? "bg-indigo-50 text-indigo-600 border-l-4 border-l-indigo-600" 
-                  : "text-indigo-500/80 hover:bg-indigo-50/50"
-              )}
-            >
-              <div className="relative">
-                <Bot className="w-5 h-5" />
-                <Sparkles className="w-2.5 h-2.5 absolute -top-1 -right-1 text-amber-400" />
-              </div>
-              Medicare AI Helper
-            </button>
           </div>
 
           {/* Main Content */}
@@ -164,7 +148,7 @@ export default function PatientDashboard() {
                     </div>
                   )}
                 </motion.div>
-              ) : activeTab === 'prescriptions' ? (
+              ) : (
                 <motion.div
                   key="prescriptions"
                   initial={{ opacity: 0, y: 10 }}
@@ -215,15 +199,6 @@ export default function PatientDashboard() {
                       <p className="text-text-muted">Once a doctor prescribes medicine, it will appear here.</p>
                     </div>
                   )}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="ai"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                >
-                  <AIAssistant onClose={() => setActiveTab('appointments')} />
                 </motion.div>
               )}
             </AnimatePresence>
