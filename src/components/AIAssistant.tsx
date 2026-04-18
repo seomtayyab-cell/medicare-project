@@ -24,7 +24,6 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
   ]);
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
-  const [apiKeyMissing, setApiKeyMissing] = React.useState(!process.env.GEMINI_API_KEY);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -35,10 +34,6 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-    if (!process.env.GEMINI_API_KEY) {
-      setApiKeyMissing(true);
-      return;
-    }
 
     const userMessage = input.trim();
     setInput('');
@@ -144,27 +139,6 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
         ref={scrollRef}
         className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 relative"
       >
-        {apiKeyMissing && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-8 text-center">
-            <div className="max-w-xs space-y-4">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
-                <AlertTriangle className="w-8 h-8 text-amber-600" />
-              </div>
-              <h4 className="font-bold text-slate-900">AI Assistant Inactive</h4>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                The Gemini AI service is not configured. If you are the project owner, please add your <code className="bg-slate-100 px-1 py-0.5 rounded text-primary">GEMINI_API_KEY</code> to the environment variables.
-              </p>
-              {onClose && (
-                <button 
-                  onClick={onClose}
-                  className="btn-primary w-full py-3"
-                >
-                  Return to Dashboard
-                </button>
-              )}
-            </div>
-          </div>
-        )}
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
             <motion.div
