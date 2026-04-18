@@ -62,6 +62,8 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
 
       if (errorStr.includes('API_KEY_INVALID') || errorStr.includes('403')) {
         errorMessage = "Invalid Gemini API Key. If you are using a GitHub export, ensure you have set GEMINI_API_KEY in your deployment environment.";
+      } else if (errorStr.includes('key is missing') || errorStr.includes('provide a valid API key')) {
+        errorMessage = "Gemini API Key is missing. \n\nTo fix this:\n1. Go to your deployment settings (e.g., Vercel, Netlify).\n2. Add a new Environment Variable named 'GEMINI_API_KEY'.\n3. Paste your key from Google AI Studio.\n4. Re-deploy your application.";
       } else if (errorStr.includes('429')) {
         errorMessage = "The AI service is currently busy (Quota Exceeded). Please wait a minute and try again.";
       } else if (errorStr.includes('404') || errorStr.includes('model not found')) {

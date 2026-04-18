@@ -1,12 +1,28 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 export const googleProvider = new GoogleAuthProvider();
+
+// CRITICAL: Connection Test as per instructions
+async function testConnection() {
+  try {
+    // Attempt to touch the server to verify connectivity
+    await getDocFromServer(doc(db, '_health', 'connection'));
+    console.log("Firestore connection verified.");
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes('the client is offline') || error.message.includes('Could not reach'))) {
+      console.error("CRITICAL: Firestore is unreachable. Please check your Firebase configuration and internet connection.");
+    }
+  }
+}
+testConnection();
 
 export enum OperationType {
   CREATE = 'create',
