@@ -25,17 +25,8 @@ export interface Appointment {
   doctorName: string;
   date: string;
   time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'prescription-issued';
   notes?: string;
-}
-
-export interface Report {
-  id: string;
-  patientUid: string;
-  title: string;
-  fileUrl: string;
-  date: string;
-  doctorName?: string;
 }
 
 export interface Prescription {

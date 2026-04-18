@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Users, Calendar, Settings, Check, X, AlertCircle, TrendingUp, UserPlus, FileEdit, Stethoscope, FileUp, LayoutDashboard, Trash2, Pill } from 'lucide-react';
+import { Users, Calendar, Settings, Check, X, AlertCircle, TrendingUp, UserPlus, FileEdit, Stethoscope, LayoutDashboard, Trash2, Pill } from 'lucide-react';
 import { db, auth, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, onSnapshot, orderBy, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { Appointment, UserProfile, Doctor, Prescription } from '../types';
 import { cn } from '../lib/utils';
 import DoctorModal from './DoctorModal';
-import ReportModal from './ReportModal';
 import PrescriptionModal from './PrescriptionModal';
 
 export default function AdminDashboard() {
@@ -20,7 +19,6 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = React.useState<'overview' | 'patients' | 'prescriptions'>('overview');
   const [selectedPatient, setSelectedPatient] = React.useState<UserProfile | null>(null);
   const [editingPrescription, setEditingPrescription] = React.useState<(Prescription & { firestoreId: string }) | null>(null);
-  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
   const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = React.useState(false);
   const [targetAppointmentId, setTargetAppointmentId] = React.useState<string | null>(null);
 
@@ -49,7 +47,7 @@ export default function AdminDashboard() {
     });
 
     const unsubDoctors = onSnapshot(qDoctors, (snapshot) => {
-      setDoctors(snapshot.docs.map(doc => doc.data() as Doctor));
+      setDoctors(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Doctor)));
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'doctors');
     });
@@ -90,9 +88,13 @@ export default function AdminDashboard() {
   const deleteDoctor = async (doctorId: string) => {
     if (!window.confirm('Are you sure you want to delete this doctor?')) return;
     const path = `doctors/${doctorId}`;
+    console.log('Attempting to delete doctor at path:', path);
     try {
       await deleteDoc(doc(db, 'doctors', doctorId));
+      console.log('Successfully deleted doctor:', doctorId);
     } catch (error) {
+      console.error('Failed to delete doctor:', error);
+      alert('Failed to delete doctor. This might be due to permission issues. Please ensure you are logged in as an authorized admin.');
       handleFirestoreError(error, OperationType.DELETE, path);
     }
   };
@@ -105,11 +107,6 @@ export default function AdminDashboard() {
   const handleAddDoctor = () => {
     setEditingDoctor(null);
     setIsDoctorModalOpen(true);
-  };
-
-  const handleUploadReport = (patient: UserProfile) => {
-    setSelectedPatient(patient);
-    setIsReportModalOpen(true);
   };
 
   const deletePrescription = async (id: string) => {
@@ -259,9 +256,10 @@ export default function AdminDashboard() {
                               <span className={cn(
                                 "px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider",
                                 appt.status === 'confirmed' ? "bg-primary-light text-primary-dark" :
+                                appt.status === 'prescription-issued' ? "bg-indigo-100 text-indigo-700 font-black border border-indigo-200" :
                                 appt.status === 'cancelled' ? "bg-red-50 text-red-700" : "bg-amber-100 text-amber-700"
                               )}>
-                                {appt.status}
+                                {appt.status.replace('-', ' ')}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
@@ -307,13 +305,6 @@ export default function AdminDashboard() {
                                         <Pill className="w-4 h-4" />
                                       </button>
                                     )}
-                                    <button
-                                      onClick={() => handleUploadReport(users.find(u => u.uid === appt.patientUid)!)}
-                                      className="p-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-600 hover:text-white transition-all"
-                                      title="Upload Report"
-                                    >
-                                      <FileUp className="w-4 h-4" />
-                                    </button>
                                   </>
                                 )}
 
@@ -422,14 +413,6 @@ export default function AdminDashboard() {
                             <Pill className={cn("w-4 h-4", prescriptions.some(p => p.patientUid === patient.uid && p.status === 'active') ? "opacity-30" : "")} />
                             {prescriptions.some(p => p.patientUid === patient.uid && p.status === 'active') ? 'Prescribed' : 'Prescription'}
                           </button>
-                          <button 
-                            onClick={() => handleUploadReport(patient)}
-                            className="flex items-center gap-2 p-2 bg-primary-light text-primary-dark rounded-lg hover:bg-primary hover:text-white transition-all text-xs font-bold"
-                            title="Upload Report"
-                          >
-                            <FileUp className="w-4 h-4" />
-                            Report
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -522,12 +505,6 @@ export default function AdminDashboard() {
         isOpen={isDoctorModalOpen} 
         onClose={() => setIsDoctorModalOpen(false)} 
         doctor={editingDoctor}
-      />
-
-      <ReportModal 
-        isOpen={isReportModalOpen} 
-        onClose={() => setIsReportModalOpen(false)} 
-        patient={selectedPatient}
       />
 
       <PrescriptionModal 

@@ -26,11 +26,11 @@ export default function PrescriptionModal({ isOpen, onClose, patient, prescripti
   React.useEffect(() => {
     if (prescription) {
       setFormData({
-        doctorName: prescription.doctorName,
-        medicine: prescription.medicine,
-        instructions: prescription.instructions,
-        date: prescription.date,
-        status: prescription.status
+        doctorName: prescription.doctorName || '',
+        medicine: prescription.medicine || '',
+        instructions: prescription.instructions || '',
+        date: prescription.date || new Date().toISOString().split('T')[0],
+        status: (prescription.status as any) || 'active'
       });
     } else {
       setFormData({
@@ -74,7 +74,7 @@ export default function PrescriptionModal({ isOpen, onClose, patient, prescripti
         // Update appointment status if this prescription is linked to one
         if (appointmentId) {
           await updateDoc(doc(db, 'appointments', appointmentId), {
-            status: 'confirmed'
+            status: 'prescription-issued'
           });
         }
       }

@@ -14,9 +14,6 @@ service cloud.firestore {
     // Collection: appointments
     // Fields: id, patientUid, doctorId, doctorName, date, time, status, notes
     //
-    // Collection: reports
-    // Fields: id, patientUid, title, fileUrl, date, doctorName
-    //
     // Collection: prescriptions
     // Fields: id, patientUid, doctorName, date, medicine, instructions, status
     //
@@ -37,10 +34,8 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         (
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
-          (request.auth.token.email == "seomtayyab@gmail.com") ||
-          (request.auth.token.email == "adminmedicare@gmail.com")
+          request.auth.token.email == "seomtayyab@gmail.com" ||
+          request.auth.token.email == "adminmedicare@gmail.com"
         );
     }
 
@@ -56,14 +51,7 @@ service cloud.firestore {
              data.id is string && data.id.size() < 128 &&
              data.patientUid is string && data.patientUid.size() < 128 &&
              (data.patientUid == request.auth.uid || isAdmin()) &&
-             data.status in ['pending', 'confirmed', 'cancelled'];
-    }
-
-    function isValidReport(data) {
-      return data.keys().hasAll(['id', 'patientUid', 'title', 'fileUrl', 'date']) &&
-             data.id is string && data.id.size() < 128 &&
-             data.patientUid is string && data.patientUid.size() < 128 &&
-             (data.patientUid == request.auth.uid || isAdmin());
+             data.status in ['pending', 'confirmed', 'cancelled', 'prescription-issued'];
     }
 
     function isValidPrescription(data) {
@@ -77,9 +65,13 @@ service cloud.firestore {
     }
 
     function isValidDoctor(data) {
-      return data.keys().hasAll(['name', 'specialty', 'department']) &&
+      return data.keys().hasAll(['id', 'name', 'specialty', 'department', 'bio', 'image']) &&
+             data.keys().hasOnly(['id', 'name', 'specialty', 'department', 'bio', 'image']) &&
+             data.id is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 128 &&
              data.specialty is string &&
+             data.bio is string &&
+             data.image is string &&
              data.department in ['Cardiology', 'Neurology', 'Pediatrics', 'Orthopedics', 'Dermatology', 'General'];
     }
 
@@ -95,20 +87,14 @@ service cloud.firestore {
 
     match /doctors/{doctorId} {
       allow read: if true; // Publicly viewable
-      allow write: if isAdmin() && isValidDoctor(request.resource.data);
+      allow create, update: if isAdmin() && isValidDoctor(request.resource.data);
+      allow delete: if isAdmin();
     }
 
     match /appointments/{appointmentId} {
       allow read: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidAppointment(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin()) && isValidAppointment(request.resource.data);
-      allow delete: if isAdmin();
-    }
-
-    match /reports/{reportId} {
-      allow read: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && isValidReport(request.resource.data);
-      allow update: if isAuthenticated() && (resource.data.patientUid == request.auth.uid || isAdmin()) && isValidReport(request.resource.data);
       allow delete: if isAdmin();
     }
 

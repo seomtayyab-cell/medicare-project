@@ -16,7 +16,7 @@ export default function Doctors({ onBook }: DoctorsProps) {
   React.useEffect(() => {
     const q = query(collection(db, 'doctors'));
     const unsub = onSnapshot(q, (snapshot) => {
-      setDoctors(snapshot.docs.map(doc => doc.data() as Doctor));
+      setDoctors(snapshot.docs.map(doc => ({ ...doc.data() as Doctor, id: doc.id })));
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'doctors');

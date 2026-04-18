@@ -1,9 +1,10 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Stethoscope, Briefcase, FileText, Image as ImageIcon } from 'lucide-react';
+import { X, User, Stethoscope, Briefcase, FileText, Image as ImageIcon, Upload } from 'lucide-react';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { Doctor } from '../types';
+import { cn } from '../lib/utils';
 
 interface DoctorModalProps {
   isOpen: boolean;
@@ -20,15 +21,16 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
     bio: '',
     image: ''
   });
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (doctor) {
       setFormData({
-        name: doctor.name,
-        specialty: doctor.specialty,
-        department: doctor.department,
-        bio: doctor.bio,
-        image: doctor.image
+        name: doctor.name || '',
+        specialty: doctor.specialty || '',
+        department: doctor.department || '',
+        bio: doctor.bio || '',
+        image: doctor.image || ''
       });
     } else {
       setFormData({
@@ -41,6 +43,49 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
     }
   }, [doctor, isOpen]);
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // Create canvas
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Constraints
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          // Get compressed data
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          setFormData({ ...formData, image: compressedBase64 });
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -50,17 +95,15 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
       if (doctor?.id) {
         // Edit mode
         await updateDoc(doc(db, 'doctors', doctor.id), {
-          ...formData
+          ...formData,
+          id: doctor.id
         });
       } else {
-        // Add mode
-        const docRef = await addDoc(collection(db, 'doctors'), {
+        // Add mode - use setDoc with a generated ID to avoid two writes
+        const newDocRef = doc(collection(db, 'doctors'));
+        await setDoc(newDocRef, {
           ...formData,
-          id: '' // placeholder
-        });
-        
-        await updateDoc(docRef, {
-          id: docRef.id
+          id: newDocRef.id
         });
       }
 
@@ -82,7 +125,7 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.9, y: 30 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative bg-white w-full max-w-lg rounded-[2.5rem] shadow-[0_32px_120px_-10px_rgba(0,0,0,0.3)] border border-slate-100 p-8 sm:p-12 my-auto"
+          className="relative bg-white w-full max-w-xl rounded-[2.5rem] shadow-[0_32px_120px_-10px_rgba(0,0,0,0.3)] border border-slate-100 p-8 sm:p-12 my-auto"
         >
           <button
             onClick={onClose}
@@ -93,17 +136,42 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
 
           <div className="text-center mb-8">
             <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {doctor ? 'Edit Doctor' : 'Add New Doctor'}
+              {doctor ? 'Update Specialist' : 'Register New Specialist'}
             </h2>
             <p className="text-slate-500 mt-2 text-sm font-medium">
               {doctor ? 'Update the details of this medical specialist.' : 'Enter the details of the new medical specialist.'}
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-5">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2 flex flex-col items-center justify-center mb-4">
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <div className="w-24 h-24 bg-slate-100 rounded-2xl overflow-hidden border-2 border-slate-200 group-hover:border-primary transition-all">
+                  {formData.image ? (
+                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400">
+                      <ImageIcon className="w-8 h-8 mb-1" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Select photo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg border-2 border-white group-hover:scale-110 transition-transform">
+                  <Upload className="w-4 h-4" />
+                </div>
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+                className="hidden" 
+                accept="image/*"
+              />
+            </div>
+
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1">
-                <User className="w-4 h-4 text-primary" /> Full Name
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 lowercase tracking-widest opacity-60">
+                <User className="w-3 h-3 text-primary" /> full name
               </label>
               <input
                 required
@@ -115,47 +183,45 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1">
-                  <Stethoscope className="w-4 h-4 text-primary" /> Specialty
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={formData.specialty}
-                  onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
-                  placeholder="e.g. Cardiologist"
-                  className="block w-full h-12 px-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 font-medium whitespace-nowrap overflow-ellipsis"
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1">
-                  <Briefcase className="w-4 h-4 text-primary" /> Department
-                </label>
-                <select
-                  required
-                  value={formData.department}
-                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="block w-full h-12 px-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 font-medium appearance-none"
-                >
-                  <option value="">Select Dept</option>
-                  <option value="Cardiology">Cardiology</option>
-                  <option value="Neurology">Neurology</option>
-                  <option value="Pediatrics">Pediatrics</option>
-                  <option value="Orthopedics">Orthopedics</option>
-                  <option value="Dermatology">Dermatology</option>
-                  <option value="General">General</option>
-                </select>
-              </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 lowercase tracking-widest opacity-60">
+                <Briefcase className="w-3 h-3 text-primary" /> department
+              </label>
+              <select
+                required
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="block w-full h-12 px-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 font-medium appearance-none"
+              >
+                <option value="">Select Dept</option>
+                <option value="Cardiology">Cardiology</option>
+                <option value="Neurology">Neurology</option>
+                <option value="Pediatrics">Pediatrics</option>
+                <option value="Orthopedics">Orthopedics</option>
+                <option value="Dermatology">Dermatology</option>
+                <option value="General">General</option>
+              </select>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1">
-                <ImageIcon className="w-4 h-4 text-primary" /> Image URL
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 lowercase tracking-widest opacity-60">
+                <Stethoscope className="w-3 h-3 text-primary" /> medical specialty
               </label>
               <input
                 required
+                type="text"
+                value={formData.specialty}
+                onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                placeholder="e.g. Cardiologist"
+                className="block w-full h-12 px-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10 outline-none transition-all text-slate-900 font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 lowercase tracking-widest opacity-60">
+                <ImageIcon className="w-3 h-3 text-primary" /> or image url
+              </label>
+              <input
                 type="url"
                 value={formData.image}
                 onChange={(e) => setFormData({ ...formData, image: e.target.value })}
@@ -164,9 +230,9 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
               />
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1">
-                <FileText className="w-4 h-4 text-primary" /> Bio / Description
+            <div className="md:col-span-2 flex flex-col gap-2">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 lowercase tracking-widest opacity-60">
+                <FileText className="w-3 h-3 text-primary" /> bio / background
               </label>
               <textarea
                 required
@@ -181,15 +247,15 @@ export default function DoctorModal({ isOpen, onClose, doctor }: DoctorModalProp
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 btn-primary mt-4 flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-primary/20"
+              className="md:col-span-2 w-full h-14 btn-primary mt-4 flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-emerald-600/20"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <User className="w-5 h-5" />
+                  <User className="w-5 h-5 " />
                   <span className="text-base font-bold">
-                    {doctor ? 'Save Changes' : 'Register Doctor'}
+                    {doctor ? 'Update Profile' : 'Register Specialist'}
                   </span>
                 </>
               )}
