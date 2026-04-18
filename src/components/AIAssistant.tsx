@@ -24,6 +24,7 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
   ]);
   const [input, setInput] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [apiKeyMissing, setApiKeyMissing] = React.useState(!process.env.GEMINI_API_KEY);
   const scrollRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -34,6 +35,10 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
+    if (!process.env.GEMINI_API_KEY) {
+      setApiKeyMissing(true);
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -54,9 +59,26 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
 
       const modelResponse = response.text || "I apologize, but I'm having trouble processing that request right now. Please try again or book an appointment with a specialist.";
       setMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
-    } catch (error) {
-      console.error("Gemini Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "I'm sorry, I'm experiencing a technical issue. Please check your internet connection or try again later." }]);
+    } catch (error: any) {
+      console.error("Gemini Error Details:", error);
+      let errorMessage = "I'm sorry, I'm experiencing an unexpected issue. Please try again later.";
+      
+      const errorStr = error?.message || String(error);
+
+      if (errorStr.includes('API_KEY_INVALID') || errorStr.includes('403')) {
+        errorMessage = "Invalid Gemini API Key. If you are using a GitHub export, ensure you have set GEMINI_API_KEY in your deployment environment.";
+      } else if (errorStr.includes('429')) {
+        errorMessage = "The AI service is currently busy (Quota Exceeded). Please wait a minute and try again.";
+      } else if (errorStr.includes('404') || errorStr.includes('model not found')) {
+        errorMessage = "The requested AI model is currently unavailable in your region or project configuration.";
+      } else if (errorStr.includes('400')) {
+        errorMessage = "Bad request: The configuration or prompt might be invalid for this model version.";
+      } else {
+        // Show actual error for debugging if it's something else
+        errorMessage = `Technical Error: ${errorStr.substring(0, 150)}${errorStr.length > 150 ? '...' : ''}`;
+      }
+      
+      setMessages(prev => [...prev, { role: 'model', text: errorMessage }]);
     } finally {
       setLoading(false);
     }
@@ -120,8 +142,29 @@ export default function AIAssistant({ onClose }: AIAssistantProps) {
       {/* Messages */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50"
+        className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/50 relative"
       >
+        {apiKeyMissing && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center p-8 text-center">
+            <div className="max-w-xs space-y-4">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle className="w-8 h-8 text-amber-600" />
+              </div>
+              <h4 className="font-bold text-slate-900">AI Assistant Inactive</h4>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                The Gemini AI service is not configured. If you are the project owner, please add your <code className="bg-slate-100 px-1 py-0.5 rounded text-primary">GEMINI_API_KEY</code> to the environment variables.
+              </p>
+              {onClose && (
+                <button 
+                  onClick={onClose}
+                  className="btn-primary w-full py-3"
+                >
+                  Return to Dashboard
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         <AnimatePresence initial={false}>
           {messages.map((m, i) => (
             <motion.div
