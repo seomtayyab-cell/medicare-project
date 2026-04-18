@@ -4,7 +4,7 @@ import { Sparkles, Send, Bot, User, Trash2, AlertTriangle, ChevronRight, Loader2
 import { GoogleGenAI } from "@google/genai";
 import { cn } from '../lib/utils';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const ai = new GoogleGenAI({ apiKey: process.env.AIzaSyCqSgOTXJBH-blSOnNKW-gCAGI5sgJmRJA || '' });
 
 interface Message {
   role: 'user' | 'model';
